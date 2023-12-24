@@ -1,0 +1,45 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    app: demo
+  name: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+        - image: docker.io/onobc/demo:1
+          name: demo
+          imagePullPolicy: IfNotPresent
+          ports:
+           - hostPort: 5005
+             containerPort: 5005
+          env:
+           - name: JAVA_OPTS
+             value: '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
+
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: demo
+    spring-deployment-id: demo
+  name: demo
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8080
+      name: demo
+    - port: 5005
+      name: jdwp-dataflow
+  selector:
+    app: demo

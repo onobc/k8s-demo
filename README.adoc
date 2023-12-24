@@ -1,0 +1,77 @@
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+This is a sample app that shows how to use a Kubernetes config map as a property source in a Spring Boot app.
+Upon startup, the app prints out the value of the `foo` configuration property.
+
+WARNING: The critical portion for this to work is settings `spring.config.import=kubernetes:` which is tricky to do in `application.yml` but is straightforward in `application.properties`.
+
+
+== Start Minikube
+    minikube start --cpus=4 --memory=8192
+
+== Build Image
+    ./gradlew clean build bootBuildImage
+    docker tag demo:0.0.1-SNAPSHOT onobc/demo:1
+
+== Push Image to Minkube
+    minikube image load --pull=false "onobc/demo:1"
+    minikube image list
+
+== Create K8S Resources
+    kubectl apply -f configmap.yaml
+    kubectl apply -f clusterrole.yaml
+    kubectl apply -f deployment.yaml
+
+== Sanity Test App
+Make the http `8080` port available over `localhost` w/ the following command:
+
+    kubectl port-forward svc/demo 8080:8080
+
+In another terminal, invoke the actuator health endpoint by executing:
+
+    curl localhost:8080/actuator/health
+
+which results in:
+
+    {"status":"UP","groups":["liveness","readiness"]}
+
+== View App Log
+View the app logs w/ `k9s` or via `kubectl` such as:
+
+    kc get pods
+    kc logs pods/<enter-pod-name-from-previous-command>
+
+You should see something like the following (notice the value of the `foo` var):
+
+    2023-12-24T04:06:40.338Z  INFO 1 --- [demo] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint(s) beneath base path '/actuator'
+    2023-12-24T04:06:40.727Z  INFO 1 --- [demo] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+    2023-12-24T04:06:40.853Z  INFO 1 --- [demo] [           main] com.example.demo.DemoApplication         : Started DemoApplication in 27.859 seconds (process running for 30.721)
+    ****** FOO = bar
+    2023-12-24T04:06:46.353Z  INFO 1 --- [demo] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+    2023-12-24T04:06:46.357Z  INFO 1 --- [demo] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+    2023-12-24T04:06:46.364Z  INFO 1 --- [demo] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 6 ms
+
+== Delete K8S Resources
+    kubectl delete -f deployment.yaml
+    kubectl delete -f clusterrole.yaml
+    kubectl delete -f configmap.yaml
+
+== Remote Debug
+Make the jdwp `5005` port available over `localhost` w/ the following command:
+
+    kubectl port-forward svc/demo 5005:5005
+
+Then attach a remote debugger to port `localhost:5005`
+
+TIP: If you want to debug the startup of the app you will need to edit `deployment.yaml` and set `suspend=y` in the `JAVA_OPTS` env var and then re-apply the resources.
+
+
+=== References
+- https://docs.spring.io/spring-cloud-kubernetes/reference/property-source-config.html
+- https://spring.io/guides/gs/spring-boot-kubernetes/
