@@ -1,0 +1,11 @@
+spring:
+  application.name: demo
+  config:
+    import: "kubernetes:"
+  cloud:
+    kubernetes:
+      config:
+        name: demo
+        namespace: default
+        enabled: true
+        fail-fast: true

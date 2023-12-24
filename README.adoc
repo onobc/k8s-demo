@@ -9,7 +9,7 @@ endif::[]
 This is a sample app that shows how to use a Kubernetes config map as a property source in a Spring Boot app.
 Upon startup, the app prints out the value of the `foo` configuration property.
 
-WARNING: The critical portion for this to work is settings `spring.config.import=kubernetes:` which is tricky to do in `application.yml` but is straightforward in `application.properties`.
+WARNING: The critical portion for this to work is settings `spring.config.import=kubernetes:` which must be escaped when specified in `application.yml` as `spring.config.import: "kubernetes:"`
 
 
 == Start Minikube
